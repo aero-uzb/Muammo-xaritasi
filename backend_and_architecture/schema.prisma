@@ -1,0 +1,129 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum ProblemStatus {
+  NEW
+  ACCEPTED
+  IN_PROGRESS
+  RESOLVED
+}
+
+model User {
+  id           String         @id @default(uuid())
+  name         String
+  email        String         @unique
+  phone        String?        @unique
+  password     String
+  avatar       String?
+  role         Role           @default(USER)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  problems     Problem[]
+  comments     Comment[]
+  votes        Vote[]
+  notifications Notification[]
+  adminLogs    AdminLog[]     @relation("AdminActionUser")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  icon      String    // Lucide/Material icon identifier
+  problems  Problem[]
+}
+
+model Problem {
+  id          String        @id @default(uuid())
+  title       String
+  description String
+  latitude    Float
+  longitude   Float
+  address     String?
+  status      ProblemStatus @default(NEW)
+  votesCount  Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  category    Category      @relation(fields: [categoryId], references: [id])
+  categoryId  String
+
+  attachments Attachment[]
+  votes       Vote[]
+  comments    Comment[]
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  content    String
+  createdAt  DateTime @default(now())
+
+  problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  problemId  String
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+
+  // Parent-child relationships for comments replying to comments
+  parentId   String?
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Comment[] @relation("CommentReplies")
+}
+
+model Vote {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  problemId String
+
+  @@unique([userId, problemId])
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  url       String
+  createdAt DateTime @default(now())
+
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  problemId String
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  type      String   // e.g. "STATUS_CHANGE", "NEW_COMMENT", "ANNOUNCEMENT"
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+}
+
+model AdminLog {
+  id        String   @id @default(uuid())
+  action    String   // e.g., "CHANGE_STATUS", "MODERATE_CONTENT", "DELETE_REPORT"
+  details   String   // JSON text or descriptive string
+  createdAt DateTime @default(now())
+
+  admin     User     @relation("AdminActionUser", fields: [adminId], references: [id], onDelete: Cascade)
+  adminId   String
+}

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: muammo-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: muammo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: muammo-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:secretpassword@postgres:5432/muammo_db?schema=public
+      - JWT_SECRET=your_jwt_signing_key_secret_for_muammo_xaritasi
+      - CLOUDINARY_CLOUD_NAME=muammo_cloud
+      - CLOUDINARY_API_KEY=123456789012345
+      - CLOUDINARY_API_SECRET=your_cloudinary_api_secret_key
+      - GEMINI_API_KEY=your_gemini_api_key_configured_here
+      - PORT=3000
+    depends_on:
+      - postgres
+    restart: always
+
+volumes:
+  postgres_data:

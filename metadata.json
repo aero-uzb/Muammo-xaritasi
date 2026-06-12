@@ -1,0 +1,6 @@
+{
+  "name": "Muammo Xaritasi",
+  "description": "Uzbekistan urban development and citizen report platform. Report road damage, waste management, municipal water/power outages with GPS & AI category tagging.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
